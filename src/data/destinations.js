@@ -42,7 +42,7 @@ const destinations = [
   {
     id: "goa",
     name: "Goa",
-    image: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80",
+    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiNiYKe3OziQyEEh6yoJltraLA0U2pLc6wgy2p9lmRqA&s=10",
     description: "Enjoy beaches, nature, local food, and vibrant cultural experiences.",
     bestTime: "November to February",
     category: ["Beach", "Food", "Nature"]
