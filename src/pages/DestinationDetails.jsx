@@ -1,12 +1,29 @@
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import destinations from "../data/destinations";
 
 function DestinationDetails() {
   const { id } = useParams();
 
-  const destination = destinations.find(
-    (item) => item.id === id
-  );
+  const [destination, setDestination] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`/api/destinations/${id}`)
+      .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null)
+      .then((data) => {
+        setDestination(data);
+        setLoading(false);
+      });
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container py-5 text-center">
+        <div className="spinner-border text-success"></div>
+      </div>
+    );
+  }
 
   if (!destination) {
     return (

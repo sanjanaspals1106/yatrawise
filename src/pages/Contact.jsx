@@ -20,7 +20,7 @@ function Contact() {
     });
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const newErrors = {};
@@ -49,14 +49,31 @@ function Contact() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      setSuccess("Thank you! Your message has been submitted successfully.");
+      try {
+        const response = await fetch("/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData)
+        });
+        const data = await response.json();
 
-      setFormData({
-        name: "",
-        email: "",
-        subject: "",
-        message: ""
-      });
+        if (!response.ok) {
+          setErrors(data.details || { message: data.error });
+          setSuccess("");
+          return;
+        }
+
+        setSuccess(data.message);
+        setFormData({
+          name: "",
+          email: "",
+          subject: "",
+          message: ""
+        });
+      } catch {
+        setErrors({ message: "Could not reach the server. Please try again." });
+        setSuccess("");
+      }
     } else {
       setSuccess("");
     }

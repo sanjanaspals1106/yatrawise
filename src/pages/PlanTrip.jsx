@@ -1,6 +1,4 @@
-import { useState } from "react";
-import destinations from "../data/destinations";
-import itineraryData from "../data/itineraryData";
+import { useEffect, useState } from "react";
 
 function PlanTrip() {
   const [destination, setDestination] = useState("");
@@ -8,6 +6,16 @@ function PlanTrip() {
   const [interests, setInterests] = useState([]);
   const [itinerary, setItinerary] = useState([]);
   const [error, setError] = useState("");
+  const [destinations, setDestinations] = useState([]);
+  const [tripId, setTripId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/destinations")
+      .then((response) => response.json())
+      .then(setDestinations)
+      .catch(() => setError("Could not load destinations. Is the API running?"));
+  }, []);
 
   const interestOptions = [
     "heritage",
@@ -28,7 +36,7 @@ function PlanTrip() {
     }
   }
 
-  function generateItinerary(event) {
+  async function generateItinerary(event) {
     event.preventDefault();
 
     if (!destination || !duration || interests.length === 0) {
@@ -37,25 +45,32 @@ function PlanTrip() {
     }
 
     setError("");
+    setSubmitting(true);
 
-    const tripPlan = [];
-    const destinationActivities = itineraryData[destination];
-
-    for (let day = 0; day < Number(duration); day++) {
-      const selectedInterest =
-        interests[day % interests.length];
-
-      const activities =
-        destinationActivities[selectedInterest];
-
-      tripPlan.push({
-        day: day + 1,
-        theme: selectedInterest,
-        activities
+    try {
+      const response = await fetch("/api/trips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          destination,
+          duration: Number(duration),
+          interests
+        })
       });
-    }
+      const data = await response.json();
 
-    setItinerary(tripPlan);
+      if (!response.ok) {
+        const details = data.details ? Object.values(data.details).join(" ") : "";
+        throw new Error(details || data.error || "Could not create trip.");
+      }
+
+      setItinerary(data.itinerary);
+      setTripId(data._id);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -138,7 +153,7 @@ function PlanTrip() {
           </div>
         )}
 
-        <button className="btn btn-success" type="submit">
+        <button className="btn btn-success" type="submit" disabled={submitting}>
           Generate Itinerary
         </button>
       </form>
@@ -148,6 +163,15 @@ function PlanTrip() {
           <h2 className="text-center mb-4">
             Your Suggested Itinerary
           </h2>
+
+          <div className="text-center mb-4">
+            <a
+              className="btn btn-outline-success"
+              href={`/api/trips/${tripId}/export`}
+            >
+              Download Itinerary
+            </a>
+          </div>
 
           <div className="row">
             {itinerary.map((plan) => (

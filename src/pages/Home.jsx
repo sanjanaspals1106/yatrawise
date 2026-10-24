@@ -1,8 +1,24 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import destinations from "../data/destinations";
 import DestinationCard from "../components/DestinationCard";
 
 function Home() {
+  const [destinations, setDestinations] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch("/api/destinations")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load destinations.");
+        }
+
+        return response.json();
+      })
+      .then(setDestinations)
+      .catch((err) => setError(err.message));
+  }, []);
+
   return (
     <>
       <section className="hero-section text-center text-white d-flex align-items-center">
@@ -69,6 +85,12 @@ function Home() {
             View All
           </Link>
         </div>
+
+        {error && (
+          <div className="alert alert-danger">
+            {error}
+          </div>
+        )}
 
         <div className="row">
           {destinations.slice(0, 3).map((destination) => (

@@ -104,6 +104,76 @@ Destination data is asynchronously loaded using:
 
 ---
 
+## 🧩 Full-Stack Setup (MERN)
+
+The React frontend talks to an Express + MongoDB (Mongoose) backend in `server/`.
+
+### Prerequisites
+
+- Node.js 20+
+- A MongoDB instance (local `mongod` or a MongoDB Atlas connection string)
+
+### Setup
+
+```bash
+npm install
+cp .env.example .env      # then set MONGODB_URI (never commit .env)
+npm run seed              # idempotent: upserts destinations + itinerary data
+npm run dev:all           # API on :5001 + Vite on :5173 (proxies /api)
+```
+
+Run separately with `npm run server` and `npm run dev`. Other scripts: `npm run build`, `npm test`.
+Port 5001 is the default because macOS uses 5000 for AirPlay.
+
+Tests: unit tests always run; API integration tests use `TEST_MONGODB_URI`
+(default `mongodb://127.0.0.1:27017/yatrawise_test`, dropped after the run) and skip if MongoDB is unreachable.
+
+### Environment variables (`.env.example`)
+
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | API port (default 5001) |
+| `MONGODB_URI` | MongoDB connection string |
+| `EXPORT_DIR` / `LOG_DIR` | Where itinerary exports and event logs are written |
+| `CORS_ORIGIN` | Allowed frontend origin |
+| `ADMIN_API_KEY` | Sent as `x-api-key` to use admin endpoints (destination POST/PATCH/DELETE, `GET /api/trips`, `GET /api/contact`, trip metrics). If blank, these are open in development and return 403 when `NODE_ENV=production` |
+
+### REST API
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| GET | `/api/health` | Health check |
+| GET | `/api/destinations?category=` | List destinations |
+| GET | `/api/destinations/:id` | One destination (slug id) |
+| POST | `/api/destinations` | Create (validated) |
+| PATCH | `/api/destinations/:id` | Partial update |
+| DELETE | `/api/destinations/:id` | Delete |
+| GET | `/api/trips` | List trips |
+| GET | `/api/trips/:id` | One trip |
+| POST | `/api/trips` | Create trip; server generates the day-wise itinerary. Body: `{destination, duration (1-7), interests[], travelerName?, notes?}` |
+| PATCH | `/api/trips/:id` | Update duration/interests/notes (regenerates itinerary) |
+| DELETE | `/api/trips/:id` | Delete trip |
+| GET | `/api/trips/:id/export` | Writes itinerary to disk and downloads it as `.txt` |
+| GET | `/api/trips/stats/metrics` | In-memory event counters |
+| POST | `/api/contact` | Save a contact message (validated) |
+| GET | `/api/contact` | List messages |
+
+Admin endpoints (see `ADMIN_API_KEY`) are the destination writes, the trips list, metrics and the contact list. Errors return JSON: `400` validation (`details` per field), `404`, `409` duplicate, `500`.
+
+### FSD Units IV & V Mapping
+
+| Concept | Where |
+| --- | --- |
+| Async file system (`fs/promises`) | `server/services/itinerary.js` (itinerary export), `server/events/tripEvents.js` (log append) |
+| `EventEmitter` custom events | `server/events/tripEvents.js` — `tripCreated`, `tripDeleted`, `tripExported` listeners log and count metrics |
+| Custom middleware | `server/middleware/index.js` — request logger, ObjectId validator, 404 handler, central error handler |
+| Express routing, REST verbs | `server/routes/*.js`, `server/app.js` |
+| Mongoose schemas + validation | `server/models/*.js` |
+| Idempotent seeding | `server/scripts/seed.js` (reads `src/data/*.js`, upserts by slug) |
+| React ↔ API integration | `Explore`, `DestinationDetails`, `PlanTrip`, `Contact` pages use `fetch` |
+
+---
+
 ## 🛠️ Technologies Used
 
 ### Frontend
@@ -149,7 +219,9 @@ yatrawise/
 │
 ├── public/
 │   └── data/
-│       └── destinations.json
+│       └── destinations.json   (legacy static copy, no longer fetched)
+│
+├── server/                     (Express API, models, events, seed, tests)
 │
 ├── src/
 │   ├── components/
@@ -219,7 +291,7 @@ Explore Component Loads
         ↓
 useEffect() Runs
         ↓
-fetch("/data/destinations.json")
+fetch("/api/destinations")
         ↓
 JSON Response Received
         ↓
