@@ -10,7 +10,7 @@ const destinations = [
   {
     id: "hampi",
     name: "Hampi",
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcReJFhGTxGSAdhz4weiX_F_HIwt9LJ0jWzTYFkl8BknLw&s=10",
+    image: "https://res.cloudinary.com/roundglass/image/upload/c_crop,x_0,y_171,w_1920,h_1080,f_auto/ar_16:9,c_fill,w_auto/g_auto,q_auto/v1756202048/rg/collective/media/hampi-tungabhadra-river-habitat-landscape-dhritiman-mukherjee_tsiylt.jpg",
     description: "Explore ancient ruins, magnificent temples, and a unique historical landscape.",
     bestTime: "October to February",
     category: ["Heritage", "History", "Nature"]
